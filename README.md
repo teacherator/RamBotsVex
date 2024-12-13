@@ -1,3 +1,3 @@
 # RamBotsVex
 
-Install VexCode V5: https://github.com/teacherator/RamBotsVex.git
+Install VexCode V5: https://www.vexrobotics.com/vexcode/install/v5
