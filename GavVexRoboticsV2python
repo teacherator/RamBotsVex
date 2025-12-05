@@ -1,0 +1,116 @@
+#region VEXcode Generated Robot Configuration
+from vex import *
+import urandom
+import math
+
+# Brain should be defined by default
+brain=Brain()
+conveyor_last = None  # None = first move, "L1" = last move was L1, "L2" = last move was L2
+
+# Robot configuration code
+controller_1 = Controller(PRIMARY)
+frontLeft = Motor(Ports.PORT15, GearSetting.RATIO_18_1, False)
+rearLeft = Motor(Ports.PORT14, GearSetting.RATIO_18_1, False)
+frontRight = Motor(Ports.PORT19, GearSetting.RATIO_18_1, True)
+rearRight = Motor(Ports.PORT20, GearSetting.RATIO_18_1, True)
+leftIntake = Motor(Ports.PORT13,  GearSetting.RATIO_18_1, False)
+rightIntake = Motor(Ports.PORT17, GearSetting.RATIO_18_1, False)
+Conveyor = Motor(Ports.PORT18, GearSetting.RATIO_36_1, False) 
+Ejection = Motor(Ports.PORT16, GearSetting.RATIO_36_1, False)
+
+# wait for rotation sensor to fully initialize
+wait(30, MSEC)
+
+# Make random actually random
+def initializeRandomSeed():
+    wait(100, MSEC)
+    random = brain.battery.voltage(MV) + brain.battery.current(CurrentUnits.AMP) * 100 + brain.timer.system_high_res()
+    urandom.seed(int(random))
+      
+# Set random seed 
+initializeRandomSeed()
+
+def play_vexcode_sound(sound_name):
+    print("VEXPlaySound:" + sound_name)
+    wait(5, MSEC)
+
+wait(200, MSEC)
+print("\033[2J")
+#endregion VEXcode Generated Robot  Configuration
+
+screen_precision = 0
+console_precision = 0
+controller_1_precision = 0
+myVariable = 0
+Speed = 0
+
+def SPEEDS_button_(SPEEDS_button___button_):
+    global myVariable, Speed, screen_precision, console_precision, controller_1_precision
+    if controller_1.buttonRight.pressing():
+        Speed = 0.75
+    if controller_1.buttonUp.pressing():
+        Speed = 1
+    if controller_1.buttonDown.pressing():
+        Speed = 0.5
+    if controller_1.buttonLeft.pressing():
+        Speed = 0.25
+
+def when_started1():
+    global myVariable, Speed, screen_precision, console_precision, controller_1_precision, conveyor_last
+    Speed = 0.5
+
+    while True:
+        # Drive motors
+        frontLeft.set_velocity((Speed * (controller_1.axis3.position() + (controller_1.axis1.position() + controller_1.axis4.position()))), PERCENT)
+        frontLeft.spin(FORWARD)
+        rearLeft.set_velocity((Speed * (controller_1.axis3.position() - (controller_1.axis1.position() - controller_1.axis4.position()))), PERCENT)
+        rearLeft.spin(FORWARD)
+        frontRight.set_velocity((Speed * (controller_1.axis3.position() - (controller_1.axis1.position() + controller_1.axis4.position()))), PERCENT)
+        frontRight.spin(FORWARD)
+        rearRight.set_velocity((Speed * (controller_1.axis3.position() + (controller_1.axis1.position() - controller_1.axis4.position()))), PERCENT)
+        rearRight.spin(FORWARD)
+        
+        # Conveyor continuous (X/Y)
+        if controller_1.buttonX.pressing():
+            Conveyor.set_velocity(30, PERCENT)
+            Conveyor.spin(FORWARD)
+        elif controller_1.buttonY.pressing():
+            Conveyor.set_velocity(30, PERCENT)
+            Conveyor.spin(REVERSE)
+        else:
+            Conveyor.stop()
+        
+        if controller_1.buttonL1.pressing() and not Conveyor.is_spinning():
+            if conveyor_last in [None, "L2"]:      # L1 must be first OR last must be L2
+                Conveyor.set_velocity(25, PERCENT)
+                Conveyor.spin_for(REVERSE, .44, TURNS, wait=True)
+                conveyor_last = "L1"
+
+        elif controller_1.buttonL2.pressing() and not Conveyor.is_spinning():
+            if conveyor_last == "L1":              # L2 allowed only after L1
+                Conveyor.set_velocity(25, PERCENT)
+                Conveyor.spin_for(FORWARD, .44, TURNS, wait=True)
+                conveyor_last = "L2"
+
+        # Intake controlled by toggle A/B at 3x speed
+        if controller_1.buttonA.pressing():
+            leftIntake.spin(FORWARD, 150, PERCENT)
+            rightIntake.spin(REVERSE, 150, PERCENT)
+        elif controller_1.buttonB.pressing():
+            leftIntake.spin(REVERSE, 150, PERCENT)
+            rightIntake.spin(FORWARD, 150, PERCENT)
+        else:
+            leftIntake.stop()
+            rightIntake.stop()
+        
+        # Ejection motor controlled by R1/R2 for specific rotations
+        if controller_1.buttonR1.pressing() and not Ejection.is_spinning():
+            Ejection.set_velocity(300, PERCENT)
+            Ejection.spin_for(FORWARD, 3, TURNS, wait=False)
+        elif controller_1.buttonR2.pressing() and not Ejection.is_spinning():
+            Ejection.set_velocity(300, PERCENT)
+            Ejection.spin_for(REVERSE, 3, TURNS, wait=False)
+
+        wait(20, MSEC)  # prevent CPU overload
+
+when_started1()
